@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Currency Converter Dashboard</title>
+    <link rel="stylesheet" href="st.css" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f9;
+        margin: 0;
+        padding: 0;
+        color: #333;
+      }
+      .header {
+        background-color: #2c3e50;
+        color: white;
+        text-align: center;
+        padding: 20px;
+        font-size: 24px;
+        font-weight: bold;
+      }
+      .menu-bar {
+        background-color: #34495e;
+        padding: 10px 0;
+        text-align: center;
+      }
+      .menu-bar a {
+        color: white;
+        font-size: 18px;
+        padding: 15px;
+        text-decoration: none;
+      }
+      .menu-bar a:hover {
+        background-color: #16a085;
+      }
+      .content {
+        display: flex;
+        justify-content: center;
+        margin: 20px;
+      }
+      .converter-container {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 500px;
+      }
+      h2 {
+        text-align: center;
+        color: #2c3e50;
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: #34495e;
+      }
+      input[type="number"], input[type="text"], select {
+        width: 100%;
+        padding: 12px;
+        margin-top: 5px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        font-size: 16px;
+      }
+      input[type="number"]:focus, input[type="text"]:focus, select:focus {
+        border-color: #16a085;
+        outline: none;
+      }
+      button {
+        background-color: #16a085;
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 5px;
+        font-size: 16px;
+        width: 100%;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+      button:hover {
+        background-color: #1abc9c;
+      }
+      #result {
+        margin-top: 20px;
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+        color: #2c3e50;
+      }
+      .error {
+        color: #e74c3c;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">Currency Converter Dashboard</div>
+    <div class="menu-bar">
+      <a href="#" onclick="showConverter()">Currency Converter</a>
+    </div>
+
+    <div class="content">
+      <div class="converter-container" id="converter">
+        <h2>Currency Converter</h2>
+        <div class="form-group">
+          <label for="amount">Amount:</label>
+          <input type="number" id="amount" placeholder="Enter amount" value="1" />
+          <select id="fromCurrency"></select>
+        </div>
+
+        <div class="form-group">
+          <label for="toCurrency">Convert To:</label>
+          <input type="text" id="convertedAmount" readonly />
+          <select id="toCurrency"></select>
+        </div>
+
+        <button onclick="convertCurrency()">Convert</button>
+
+        <div id="result"></div>
+      </div>
+    </div>
+
+    <script>
+      async function loadCurrencies() {
+        try {
+          const response = await fetch(
+            "https://api.exchangerate-api.com/v4/latest/USD"
+          );
+          const data = await response.json();
+          
+          const fromCurrencyDropdown = document.getElementById("fromCurrency");
+          const toCurrencyDropdown = document.getElementById("toCurrency");
+
+          // Load fromCurrency options (starting with USD as default)
+          for (const currency in data.rates) {
+            const option = document.createElement("option");
+            option.value = currency;
+            option.text = currency.toUpperCase();  // Convert to uppercase (e.g., "USD")
+            fromCurrencyDropdown.add(option);
+          }
+
+          // Load toCurrency options (also starting with USD)
+          for (const currency in data.rates) {
+            const option = document.createElement("option");
+            option.value = currency;
+            option.text = currency.toUpperCase();  // Convert to uppercase (e.g., "USD")
+            toCurrencyDropdown.add(option);
+          }
+
+        } catch (error) {
+          console.error("Error fetching currencies:", error);
+        }
+      }
+
+      // Call the function to load currencies when the page loads
+      window.onload = loadCurrencies;
+
+      function showConverter() {
+        document.getElementById("converter").style.display = "block";
+      }
+
+      async function convertCurrency() {
+        const fromCurrency = document.getElementById("fromCurrency").value;
+        const toCurrency = document.getElementById("toCurrency").value;
+        const amount = document.getElementById("amount").value;
+        const resultDiv = document.getElementById("result");
+        const convertedAmountField = document.getElementById("convertedAmount");
+
+        if (amount === "" || isNaN(amount)) {
+          resultDiv.innerText = "Please enter a valid amount.";
+          resultDiv.className = "error";
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `https://api.exchangerate-api.com/v4/latest/${fromCurrency}`
+          );
+          const data = await response.json();
+
+          const rate = data.rates[toCurrency];
+          if (!rate) {
+            resultDiv.innerText = `Conversion rate not available for ${toCurrency}.`;
+            resultDiv.className = "error";
+            return;
+          }
+
+          const convertedAmount = (amount * rate).toFixed(2);
+          convertedAmountField.value = convertedAmount;
+          resultDiv.innerText = `Converted Amount: ${convertedAmount} ${toCurrency}`;
+          resultDiv.className = "";
+        } catch (error) {
+          resultDiv.innerText =
+            "Error fetching conversion rates. Please try again.";
+          resultDiv.className = "error";
+        }
+      }
+    </script>
+  </body>
+</html>
